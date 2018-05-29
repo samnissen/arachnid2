@@ -5,8 +5,10 @@
 Arachnid2 is a simple, fast web-crawler written in Ruby.
 It uses [typhoeus](https://github.com/typhoeus/typhoeus)
 to get HTTP requests,
-and [bloomfilter-rb](https://github.com/igrigorik/bloomfilter-rb)
-to store the URLs it will get and has gotten.
+[bloomfilter-rb](https://github.com/igrigorik/bloomfilter-rb)
+to store the URLs it will get and has gotten,
+and [nokogiri](https://github.com/sparklemotion/nokogiri)
+to find the URLs on each webpage.
 
 Arachnid2 is a successor to [Arachnid](https://github.com/dchuk/Arachnid),
 and was abstracted out of the [Tellurion Bot](https://github.com/samnissen/tellurion_bot).
@@ -62,6 +64,7 @@ url = "http://sixcolours.com"
 spider = Arachnid2.new(url)
 opts = {
   time_box: 60,
+  max_urls: 50,
   language: "en-UK",
   user_agent: "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0"
 }
@@ -77,6 +80,13 @@ spider.crawl(opts) { |response|
 The crawler will time-bound your spidering. If no valid integer is provided,
 it will crawl for 15 seconds before exiting. 600 seconds (10 minutes)
 is the current maximum, and any value above it will be reduced to 600.
+
+#### `max_urls`
+
+The crawler will crawl a limited number of URLs before stopping.
+If no valid integer is provided, it will crawl for 50 URLs before exiting.
+10000 seconds is the current maximum,
+and any value above it will be reduced to 10000.
 
 #### `language`
 

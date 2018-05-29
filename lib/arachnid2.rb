@@ -22,7 +22,7 @@ class Arachnid2
 
   MAX_CRAWL_TIME = 600
   BASE_CRAWL_TIME = 15
-  MAX_URLS = 1000
+  MAX_URLS = 10000
   BASE_URLS = 50
   DEFAULT_LANGUAGE = "en-IE, en-UK;q=0.9, en-NL;q=0.8, en-MT;q=0.7, en-LU;q=0.6, en;q=0.5, *;0.4"
   DEFAULT_USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.1 Safari/605.1.15"
@@ -168,9 +168,9 @@ class Arachnid2
     end
 
     def request_options
-      @cookie_file = Tempfile.new('cookies')
+      @cookie_file ||= Tempfile.new('cookies')
 
-      {
+      @request_options = {
         timeout: 10000,
         followlocation: true,
         cookiefile: @cookie_file.path,
@@ -180,6 +180,8 @@ class Arachnid2
           'User-Agent' => "#{user_agent}"
         }
       }
+
+      @request_options
     end
 
     def language
@@ -200,10 +202,6 @@ class Arachnid2
 
     def time_limit
       bound_time
-    end
-
-    def domain_options
-      { :exclude_urls_with_images => true }
     end
 
     def make_absolute(href, root)
