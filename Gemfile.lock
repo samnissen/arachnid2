@@ -4,7 +4,7 @@ PATH
     arachnid2 (0.1.0)
       addressable
       adomain
-      bloom-filter
+      bloomfilter-rb
       nokogiri
       typhoeus
 
@@ -15,7 +15,8 @@ GEM
       public_suffix (>= 2.0.2, < 4.0)
     adomain (0.1.1)
       addressable (~> 2.5)
-    bloom-filter (0.2.2)
+    bloomfilter-rb (2.1.1)
+      redis
     diff-lcs (1.3)
     ethon (0.11.0)
       ffi (>= 1.3.0)
@@ -25,6 +26,7 @@ GEM
       mini_portile2 (~> 2.3.0)
     public_suffix (3.0.2)
     rake (10.5.0)
+    redis (4.0.1)
     rspec (3.7.0)
       rspec-core (~> 3.7.0)
       rspec-expectations (~> 3.7.0)
@@ -51,4 +53,4 @@ DEPENDENCIES
   rspec (~> 3.0)
 
 BUNDLED WITH
-   1.16.1
+   1.16.2
