@@ -20,7 +20,7 @@ class Arachnid2
   # And this was originally written as a part of Tellurion's bot
   # https://github.com/samnissen/tellurion_bot
 
-  MAX_CRAWL_TIME = 300
+  MAX_CRAWL_TIME = 600
   BASE_CRAWL_TIME = 15
   MAX_URLS = 1000
   BASE_URLS = 50
