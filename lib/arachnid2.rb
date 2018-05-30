@@ -209,7 +209,7 @@ class Arachnid2
     end
 
     def internal_link?(absolute_url)
-      Adomain[absolute_url].include? @domain
+      "#{Adomain[absolute_url]}".include? @domain
     end
 
     def extension_ignored?(url)
