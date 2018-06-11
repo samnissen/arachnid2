@@ -66,7 +66,13 @@ class Arachnid2
   #   opts = {
   #     :time_box => 30,
   #     :language => "es-IO",
-  #     :user_agent => "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0"
+  #     :user_agent => "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0",
+  #     :proxy => {
+  #       :ip => "1.2.3.4",
+  #       :port => "1234",
+  #       :username => "sam",
+  #       :password => "coolcoolcool",
+  #     }
   #   }
   #   responses = []
   #   spider.crawl(opts) { |response|
@@ -111,6 +117,21 @@ class Arachnid2
   end
 
   private
+    def request(url)
+      return case
+      when !@proxy_options
+        Typhoeus::Request.new(url, request_options)
+      when @proxy_options[:username]
+        Typhoeus::Request.new(url, request_options,
+          :proxy => "#{@proxy_options[:ip]}:#{@proxy_options[:port]}",
+          :proxy_username => @proxy_options[:username],
+          :proxy_password => @proxy_options[:password])
+      else
+        Typhoeus::Request.new(url, request_options,
+          :proxy => "#{@proxy_options[:ip]}:#{@proxy_options[:port]}")
+      end
+    end
+
     def process(response)
       return false unless Adomain["#{response.effective_url}"].include? @domain
 
@@ -145,6 +166,7 @@ class Arachnid2
     def preflight(opts)
       @options = opts
       @crawl_options = crawl_options
+      @proxy_options = @options[:proxy]
       # TODO: write looping to take advantage of Hydra
       # @hydra = Typhoeus::Hydra.new(:max_concurrency => 1)
       @global_visited = BloomFilter::Native.new(:size => 1000000, :hashes => 5, :seed => 1, :bucket => 8, :raise => true)
