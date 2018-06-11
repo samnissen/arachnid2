@@ -67,6 +67,12 @@ opts = {
   max_urls: 50,
   language: "en-UK",
   user_agent: "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0"
+  proxy: {
+    ip: "1.2.3.4",
+    port: "1234",
+    username: "sam",
+    password: "coolcoolcool",
+  }
 }
 responses = []
 
@@ -99,6 +105,12 @@ default is
 This user agent is a string mapped to the HTTP header User-Agent. The
 default is
 `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.1 Safari/605.1.15`
+
+#### `proxy`
+
+Provide your IP, port for a proxy. If required, provide credentials for
+authenticating to that proxy. Proxy options and handling are done
+by Typhoeus.
 
 ### Memory use in Docker
 
