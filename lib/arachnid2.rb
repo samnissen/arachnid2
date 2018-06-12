@@ -65,8 +65,10 @@ class Arachnid2
   #
   #   opts = {
   #     :time_box => 30,
-  #     :language => "es-IO",
-  #     :user_agent => "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0",
+  #     :headers => {
+  #       'Accept-Language' => "en-UK",
+  #       'User-Agent' => "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0",
+  #     },
   #     :proxy => {
   #       :ip => "1.2.3.4",
   #       :port => "1234",
@@ -117,21 +119,6 @@ class Arachnid2
   end
 
   private
-    def request(url)
-      return case
-      when !@proxy_options
-        Typhoeus::Request.new(url, request_options)
-      when @proxy_options[:username]
-        Typhoeus::Request.new(url, request_options,
-          :proxy => "#{@proxy_options[:ip]}:#{@proxy_options[:port]}",
-          :proxy_username => @proxy_options[:username],
-          :proxy_password => @proxy_options[:password])
-      else
-        Typhoeus::Request.new(url, request_options,
-          :proxy => "#{@proxy_options[:ip]}:#{@proxy_options[:port]}")
-      end
-    end
-
     def process(response)
       return false unless Adomain["#{response.effective_url}"].include? @domain
 
@@ -166,7 +153,6 @@ class Arachnid2
     def preflight(opts)
       @options = opts
       @crawl_options = crawl_options
-      @proxy_options = @options[:proxy]
       # TODO: write looping to take advantage of Hydra
       # @hydra = Typhoeus::Hydra.new(:max_concurrency => 1)
       @global_visited = BloomFilter::Native.new(:size => 1000000, :hashes => 5, :seed => 1, :bucket => 8, :raise => true)
@@ -197,25 +183,27 @@ class Arachnid2
         followlocation: true,
         cookiefile: @cookie_file.path,
         cookiejar: @cookie_file.path,
-        headers: {
-          'Accept-Language' => "#{language}",
-          'User-Agent' => "#{user_agent}"
-        }
+        headers: @options[:headers]
       }
+
+      @request_options[:headers] ||= {}
+      @request_options[:headers]['Accept-Language'] ||= DEFAULT_LANGUAGE
+      @request_options[:headers]['User-Agent']      ||= DEFAULT_USER_AGENT
 
       @request_options
     end
 
-    def language
-      @options[:language] || DEFAULT_LANGUAGE
-    end
-
-    def user_agent
-      @options[:user_agent] || DEFAULT_USER_AGENT
-    end
-
     def crawl_options
-      { :max_urls => max_urls, :time_limit => time_limit }
+      @crawl_options ||= nil
+
+      if !@crawl_options
+        @crawl_options = { :max_urls => max_urls, :time_limit => time_limit }
+
+        @crawl_options[:proxy] = "#{@options[:proxy][:ip]}:#{@options[:proxy][:port]}" if @options.dig(:proxy, :ip)
+        @crawl_options[:proxyuserpwd] = "#{@options[:proxy][:username]}:#{@options[:proxy][:password]}" if @options.dig(:proxy, :username)
+      end
+
+      @crawl_options
     end
 
     def max_urls
