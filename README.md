@@ -65,8 +65,11 @@ spider = Arachnid2.new(url)
 opts = {
   time_box: 60,
   max_urls: 50,
-  language: "en-UK",
-  user_agent: "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0"
+  :headers => {
+    'Accept-Language' => "en-UK",
+    'User-Agent' => "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0",
+  },
+  memory_limit: 89.99,
   proxy: {
     ip: "1.2.3.4",
     port: "1234",
@@ -94,16 +97,18 @@ If no valid integer is provided, it will crawl for 50 URLs before exiting.
 10000 seconds is the current maximum,
 and any value above it will be reduced to 10000.
 
-#### `language`
+#### `headers`
 
-The language is a string mapped to the HTTP header Accept-Language. The
-default is
+This is a hash that represents any HTTP header key/value pairs you desire,
+and is passed directly to Typheous. Before it is sent, a default
+language and user agent are created:
+
+##### Defaults
+
+The HTTP header `Accept-Language` default is
 `en-IE, en-UK;q=0.9, en-NL;q=0.8, en-MT;q=0.7, en-LU;q=0.6, en;q=0.5, \*;0.4`
 
-#### `user_agent`
-
-This user agent is a string mapped to the HTTP header User-Agent. The
-default is
+The HTTP header `User-Agent` default is
 `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.1 Safari/605.1.15`
 
 #### `proxy`
@@ -112,12 +117,13 @@ Provide your IP, port for a proxy. If required, provide credentials for
 authenticating to that proxy. Proxy options and handling are done
 by Typhoeus.
 
-### Memory use in Docker
+#### `memory_limit` and Docker
 
 In case you are operating the crawler within a container, Arachnid2
-will attempt to prevent the container from running out of memory,
-and crawls will end when the container has <= 20% of its available memory
-free.
+can attempt to prevent the container from running out of memory.
+By default, it will end the crawl when the container uses >= 80%
+of its available memory. You can override this with the
+option.
 
 ### Non-HTML links
 

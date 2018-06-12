@@ -1,5 +1,6 @@
 require "bundler/setup"
 require "arachnid2"
+require "ostruct"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
