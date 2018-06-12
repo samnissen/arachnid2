@@ -37,7 +37,7 @@ class Arachnid2
   }
   MEMORY_USE_FILE = "/sys/fs/cgroup/memory/memory.usage_in_bytes"
   MEMORY_LIMIT_FILE = "/sys/fs/cgroup/memory/memory.limit_in_bytes"
-  MAXIMUM_LOAD_RATE = 79.9
+  DEFAULT_MAXIMUM_LOAD_RATE = 79.9
 
   #
   # Creates the object to execute the crawl
@@ -69,6 +69,7 @@ class Arachnid2
   #       'Accept-Language' => "en-UK",
   #       'User-Agent' => "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0",
   #     },
+  #     :memory_limit => 89.99,
   #     :proxy => {
   #       :ip => "1.2.3.4",
   #       :port => "1234",
@@ -153,6 +154,7 @@ class Arachnid2
     def preflight(opts)
       @options = opts
       @crawl_options = crawl_options
+      @maximum_load_rate = maximum_load_rate
       # TODO: write looping to take advantage of Hydra
       # @hydra = Typhoeus::Hydra.new(:max_concurrency => 1)
       @global_visited = BloomFilter::Native.new(:size => 1000000, :hashes => 5, :seed => 1, :bucket => 8, :raise => true)
@@ -236,12 +238,23 @@ class Arachnid2
 
       return false unless ( (use > 0.0) && (@limit > 0.0) )
 
-      return ( ( (use / @limit) * 100.0 ) >= MAXIMUM_LOAD_RATE )
+      return ( ( (use / @limit) * 100.0 ) >= @maximum_load_rate )
     end
 
     def in_docker?
       return false unless File.file?(MEMORY_USE_FILE)
       true
+    end
+
+    def maximum_load_rate
+      @maximum_load_rate ||= nil
+
+      if !@maximum_load_rate
+        @maximum_load_rate = "#{@options[:memory_limit]}".to_f
+        @maximum_load_rate = DEFAULT_MAXIMUM_LOAD_RATE unless ((@maximum_load_rate > 0.0) && (@maximum_load_rate < 100.0))
+      end
+
+      @maximum_load_rate
     end
 
 end
