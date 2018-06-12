@@ -35,14 +35,14 @@ RSpec.describe Arachnid2 do
       }
 
       spider.crawl(opts){}
-      
+
       crawl_options = spider.instance_variable_get(:@crawl_options)
       request_options = spider.instance_variable_get(:@request_options)
-      proxy_options = spider.instance_variable_get(:@proxy_options)
 
       expect(crawl_options[:time_limit]).to be_a(Time)
       expect(crawl_options[:max_urls]).to be_an(Integer)
-      expect(proxy_options).to be_a(Hash)
+      expect(crawl_options[:proxy]).to eq("1.2.3.4:1234")
+      expect(crawl_options[:proxyuserpwd]).to eq("sam:coolcoolcool")
       expect(request_options).not_to be_nil
     end
 
