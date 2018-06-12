@@ -24,8 +24,10 @@ RSpec.describe Arachnid2 do
       opts = {
         time_box: 10,
         max_urls: 1,
-        language: "en-UK",
-        user_agent: "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0",
+        headers: {
+          'Accept-Language' => "en-UK",
+          'User-Agent' => "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0",
+        },
         proxy: {
           ip: "1.2.3.4",
           port: "1234",
@@ -44,6 +46,7 @@ RSpec.describe Arachnid2 do
       expect(crawl_options[:proxy]).to eq("1.2.3.4:1234")
       expect(crawl_options[:proxyuserpwd]).to eq("sam:coolcoolcool")
       expect(request_options).not_to be_nil
+      expect(request_options[:headers]).to eq(opts[:headers])
     end
 
     it "visits the URL" do

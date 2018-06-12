@@ -65,8 +65,10 @@ class Arachnid2
   #
   #   opts = {
   #     :time_box => 30,
-  #     :language => "es-IO",
-  #     :user_agent => "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0",
+  #     :headers => {
+  #       'Accept-Language' => "en-UK",
+  #       'User-Agent' => "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0",
+  #     },
   #     :proxy => {
   #       :ip => "1.2.3.4",
   #       :port => "1234",
@@ -181,21 +183,14 @@ class Arachnid2
         followlocation: true,
         cookiefile: @cookie_file.path,
         cookiejar: @cookie_file.path,
-        headers: {
-          'Accept-Language' => "#{language}",
-          'User-Agent' => "#{user_agent}"
-        }
+        headers: @options[:headers]
       }
 
+      @request_options[:headers] ||= {}
+      @request_options[:headers]['Accept-Language'] ||= DEFAULT_LANGUAGE
+      @request_options[:headers]['User-Agent']      ||= DEFAULT_USER_AGENT
+
       @request_options
-    end
-
-    def language
-      @options[:language] || DEFAULT_LANGUAGE
-    end
-
-    def user_agent
-      @options[:user_agent] || DEFAULT_USER_AGENT
     end
 
     def crawl_options
