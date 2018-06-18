@@ -90,34 +90,35 @@ class Arachnid2
     preflight(opts)
 
     until @global_queue.empty?
-      @global_queue.size.times do
-        begin
-          q = @global_queue.shift
+      @max_concurrency.times do
+        q = @global_queue.shift
 
-          break if @global_visited.size >= @crawl_options[:max_urls]
-          break if Time.now > @crawl_options[:time_limit]
-          break if memory_danger?
+        break if @global_visited.size >= @crawl_options[:max_urls]
+        break if Time.now > @crawl_options[:time_limit]
+        break if memory_danger?
 
-          @global_visited.insert(q)
+        @global_visited.insert(q)
 
-          request = Typhoeus::Request.new(q, request_options)
+        request = Typhoeus::Request.new(q, request_options)
 
-          request.on_complete do |response|
-            links = process(response)
-            next unless links
+        request.on_complete do |response|
+          links = process(response)
+          next unless links
 
-            yield response
+          yield response
 
-            vacuum(links, response)
-          end
-
-          request.run
-        ensure
-          @cookie_file.close! if @cookie_file
+          vacuum(links, response)
         end
-      end
-    end
-  end
+
+        @hydra.queue(request)
+      end # @max_concurrency.times do
+
+      @hydra.run
+    end # until @global_queue.empty?
+
+  ensure
+    @cookie_file.close! if @cookie_file
+  end # def crawl(opts = {})
 
   private
     def process(response)
@@ -155,10 +156,21 @@ class Arachnid2
       @options = opts
       @crawl_options = crawl_options
       @maximum_load_rate = maximum_load_rate
-      # TODO: write looping to take advantage of Hydra
-      # @hydra = Typhoeus::Hydra.new(:max_concurrency => 1)
+      @max_concurrency = max_concurrency
+      @hydra = Typhoeus::Hydra.new(:max_concurrency => @max_concurrency)
       @global_visited = BloomFilter::Native.new(:size => 1000000, :hashes => 5, :seed => 1, :bucket => 8, :raise => true)
       @global_queue = [@url]
+    end
+
+    def max_concurrency
+      @max_concurrency ||= nil
+
+      if !@max_concurrency
+        @max_concurrency = "#{@options[:max_concurrency]}".to_i
+        @max_concurrency = 1 unless (@max_concurrency > 0)
+      end
+
+      @max_concurrency
     end
 
     def bound_time
