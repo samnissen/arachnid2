@@ -28,6 +28,7 @@ RSpec.describe Arachnid2 do
           'Accept-Language' => "en-UK",
           'User-Agent' => "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0",
         },
+        max_concurrency: 5,
         memory_limit: 39.99,
         proxy: {
           ip: "1.2.3.4",
@@ -42,6 +43,8 @@ RSpec.describe Arachnid2 do
       crawl_options = spider.instance_variable_get(:@crawl_options)
       request_options = spider.instance_variable_get(:@request_options)
       maximum_load_rate = spider.instance_variable_get(:@maximum_load_rate)
+      max_concurrency = spider.instance_variable_get(:@max_concurrency)
+      hydra = spider.instance_variable_get(:@hydra)
 
       expect(crawl_options[:time_limit]).to be_a(Time)
       expect(crawl_options[:max_urls]).to be_an(Integer)
@@ -50,6 +53,8 @@ RSpec.describe Arachnid2 do
       expect(request_options).not_to be_nil
       expect(request_options[:headers]).to eq(opts[:headers])
       expect(maximum_load_rate).to eq(39.99)
+      expect(max_concurrency).to eq(5)
+      expect(hydra).to be_a(Typhoeus::Hydra)
     end
 
     it "visits the URL" do
