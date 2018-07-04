@@ -39,6 +39,10 @@ class Arachnid2
   MEMORY_LIMIT_FILE = "/sys/fs/cgroup/memory/memory.limit_in_bytes"
   DEFAULT_MAXIMUM_LOAD_RATE = 79.9
 
+  DEFAULT_TIMEOUT = 10_000
+  MINIMUM_TIMEOUT = 1
+  MAXIMUM_TIMEOUT = 999_999
+
   #
   # Creates the object to execute the crawl
   #
@@ -64,6 +68,8 @@ class Arachnid2
   #   spider = Arachnid2.new(url)
   #
   #   opts = {
+  #     :followlocation => true,
+  #     :timeout => 25000,
   #     :time_box => 30,
   #     :headers => {
   #       'Accept-Language' => "en-UK",
@@ -189,12 +195,30 @@ class Arachnid2
       amount
     end
 
+    def followlocation
+      if @followlocation.is_a?(NilClass)
+        @followlocation = @options[:followlocation]
+        @followlocation = true unless @followlocation.is_a?(FalseClass)
+      end
+      @followlocation
+    end
+
+    def timeout
+      if !@timeout
+        @timeout = @options[:timeout]
+        @timeout = DEFAULT_TIMEOUT unless @timeout.is_a?(Integer)
+        @timeout = DEFAULT_TIMEOUT if @timeout > MAXIMUM_TIMEOUT
+        @timeout = DEFAULT_TIMEOUT if @timeout < MINIMUM_TIMEOUT
+      end
+      @timeout
+    end
+
     def request_options
       @cookie_file ||= Tempfile.new('cookies')
 
       @request_options = {
-        timeout: 10000,
-        followlocation: true,
+        timeout: timeout,
+        followlocation: followlocation,
         cookiefile: @cookie_file.path,
         cookiejar: @cookie_file.path,
         headers: @options[:headers]
