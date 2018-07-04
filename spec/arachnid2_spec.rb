@@ -22,6 +22,8 @@ RSpec.describe Arachnid2 do
       url = "https://daringfireball.net"
       spider = Arachnid2.new(url)
       opts = {
+        followlocation: true,
+        timeout: 12000,
         time_box: 10,
         max_urls: 1,
         headers: {
