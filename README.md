@@ -63,6 +63,8 @@ require "arachnid2"
 url = "http://sixcolours.com"
 spider = Arachnid2.new(url)
 opts = {
+  followlocation: true,
+  timeout: 10000,
   time_box: 60,
   max_urls: 50,
   :headers => {
