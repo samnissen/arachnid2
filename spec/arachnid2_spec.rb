@@ -47,6 +47,8 @@ RSpec.describe Arachnid2 do
       maximum_load_rate = spider.instance_variable_get(:@maximum_load_rate)
       max_concurrency = spider.instance_variable_get(:@max_concurrency)
       hydra = spider.instance_variable_get(:@hydra)
+      followlocation = spider.instance_variable_get(:@followlocation)
+      timeout = spider.instance_variable_get(:@timeout)
 
       expect(crawl_options[:time_limit]).to be_a(Time)
       expect(crawl_options[:max_urls]).to be_an(Integer)
@@ -57,6 +59,8 @@ RSpec.describe Arachnid2 do
       expect(maximum_load_rate).to eq(39.99)
       expect(max_concurrency).to eq(5)
       expect(hydra).to be_a(Typhoeus::Hydra)
+      expect(followlocation).to eq(true)
+      expect(timeout).to eq(12000)
     end
 
     it "visits the URL" do
