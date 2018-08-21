@@ -37,6 +37,11 @@ RSpec.describe Arachnid2 do
           port: "1234",
           username: "sam",
           password: "coolcoolcool",
+        },
+        non_html_extensions: {
+          2 => [".oh"],
+          3 => [".omg"],
+          5 => [".ohhai"],
         }
       }
 
@@ -48,6 +53,7 @@ RSpec.describe Arachnid2 do
       max_concurrency = spider.instance_variable_get(:@max_concurrency)
       hydra = spider.instance_variable_get(:@hydra)
       followlocation = spider.instance_variable_get(:@followlocation)
+      non_html_extensions = spider.instance_variable_get(:@non_html_extensions)
       timeout = spider.instance_variable_get(:@timeout)
 
       expect(crawl_options[:time_limit]).to be_a(Time)
@@ -61,6 +67,7 @@ RSpec.describe Arachnid2 do
       expect(hydra).to be_a(Typhoeus::Hydra)
       expect(followlocation).to eq(true)
       expect(timeout).to eq(12000)
+      expect(non_html_extensions.values.flatten).to eq([".oh", ".omg", ".ohhai"])
     end
 
     it "visits the URL" do
