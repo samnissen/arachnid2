@@ -27,7 +27,7 @@ class Arachnid2
   DEFAULT_LANGUAGE = "en-IE, en-UK;q=0.9, en-NL;q=0.8, en-MT;q=0.7, en-LU;q=0.6, en;q=0.5, *;0.4"
   DEFAULT_USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.1 Safari/605.1.15"
 
-  NON_HTML_EXTENSIONS = {
+  DEFAULT_NON_HTML_EXTENSIONS = {
     3 => ['.gz'],
     4 => ['.jpg', '.png', '.m4a', '.mp3', '.mp4', '.pdf', '.zip',
           '.wmv', '.gif', '.doc', '.xls', '.pps', '.ppt', '.tar',
@@ -81,6 +81,12 @@ class Arachnid2
   #       :port => "1234",
   #       :username => "sam",
   #       :password => "coolcoolcool",
+  #     }
+  #     :non_html_extensions => {
+  #       3 => [".abc", ".xyz"],
+  #       4 => [".abcd"],
+  #       6 => [".abcdef"],
+  #       11 => [".abcdefghijk"]
   #     }
   #   }
   #   responses = []
@@ -163,9 +169,21 @@ class Arachnid2
       @crawl_options = crawl_options
       @maximum_load_rate = maximum_load_rate
       @max_concurrency = max_concurrency
+      @non_html_extensions = non_html_extensions
       @hydra = Typhoeus::Hydra.new(:max_concurrency => @max_concurrency)
       @global_visited = BloomFilter::Native.new(:size => 1000000, :hashes => 5, :seed => 1, :bucket => 8, :raise => true)
       @global_queue = [@url]
+    end
+
+    def non_html_extensions
+      @non_html_extensions ||= nil
+
+      if !@non_html_extensions
+        @non_html_extensions   = @options[:non_html_extensions]
+        @non_html_extensions ||= DEFAULT_NON_HTML_EXTENSIONS
+      end
+
+      @non_html_extensions
     end
 
     def max_concurrency
@@ -263,7 +281,7 @@ class Arachnid2
     def extension_ignored?(url)
       return false if url.empty?
 
-      !NON_HTML_EXTENSIONS.values.flatten.find { |e| url.downcase.end_with? e.downcase }.nil?
+      !@non_html_extensions.values.flatten.find { |e| url.downcase.end_with? e.downcase }.nil?
     end
 
     def memory_danger?

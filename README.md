@@ -78,6 +78,12 @@ opts = {
     username: "sam",
     password: "coolcoolcool",
   }
+  :non_html_extensions => {
+    3 => [".abc", ".xyz"],
+    4 => [".abcd"],
+    6 => [".abcdef"],
+    11 => [".abcdefghijk"]
+  }
 }
 responses = []
 
@@ -118,6 +124,12 @@ The HTTP header `User-Agent` default is
 Provide your IP, port for a proxy. If required, provide credentials for
 authenticating to that proxy. Proxy options and handling are done
 by Typhoeus.
+
+#### `non_html_extensions`
+
+This is the list of TLDs to ignore when collecting URLs from the page.
+The extensions are formatted as a hash of key/value pairs, where the value
+is an array of TLDs, and the keys represent the length of those TLDs. 
 
 #### `memory_limit` and Docker
 
