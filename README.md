@@ -22,6 +22,9 @@ on that page, and visiting those to do the same.
 Hence, the simplest output would be to collect all of the responses
 while spidering from some URL.
 
+Set cached service url(optional)
+`export ARACHNID_CACHED_SERVICE_ADDRESS=http://localhost:9000`
+
 ```ruby
 require "arachnid2"
 
@@ -129,7 +132,7 @@ by Typhoeus.
 
 This is the list of TLDs to ignore when collecting URLs from the page.
 The extensions are formatted as a hash of key/value pairs, where the value
-is an array of TLDs, and the keys represent the length of those TLDs. 
+is an array of TLDs, and the keys represent the length of those TLDs.
 
 #### `memory_limit` and Docker
 

@@ -1,4 +1,5 @@
 require "arachnid2/version"
+require "arachnid2/cashed_arachnid_responses"
 
 require 'tempfile'
 require "typhoeus"
@@ -6,9 +7,10 @@ require "bloomfilter-rb"
 require "adomain"
 require "addressable/uri"
 require "nokogiri"
+require "base64"
 
 class Arachnid2
-
+  include CashedArachnidResponses
   # META:
   #   About the origins of this crawling approach
   # The Crawler is heavily borrowed from by Arachnid.
@@ -57,6 +59,7 @@ class Arachnid2
   def initialize(url)
     @url = url
     @domain = Adomain[@url]
+    @cached_data = []
   end
 
   #
@@ -113,7 +116,15 @@ class Arachnid2
 
         request = Typhoeus::Request.new(q, request_options)
 
+        data = load_data(@url, opts)
+        unless data.nil?
+          data.each do |response|
+            yield response
+          end
+          return
+        end
         request.on_complete do |response|
+          @cached_data.push(response)
           links = process(response)
           next unless links
 
@@ -126,10 +137,13 @@ class Arachnid2
       end # @max_concurrency.times do
 
       @hydra.run
-    end # until @global_queue.empty?
 
+    end # until @global_queue.empty?
+    put_cached_data(@url, opts, @cached_data) unless @cached_data.empty?
   ensure
     @cookie_file.close! if @cookie_file
+
+
   end # def crawl(opts = {})
 
   private
