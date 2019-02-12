@@ -3,17 +3,21 @@
 ## About
 
 Arachnid2 is a simple, fast web-crawler written in Ruby.
-It uses [typhoeus](https://github.com/typhoeus/typhoeus)
-to get HTTP requests,
+You can use [typhoeus](https://github.com/typhoeus/typhoeus)
+to get HTTP requests, or [Watir](https://github.com/watir/watir)
+to render pages.
+
 [bloomfilter-rb](https://github.com/igrigorik/bloomfilter-rb)
-to store the URLs it will get and has gotten,
+stores the URLs it will get and has gotten,
 and [nokogiri](https://github.com/sparklemotion/nokogiri)
-to find the URLs on each webpage.
+to find the URLs on each webpage, adding them to the bloomfilter queue.
 
 Arachnid2 is a successor to [Arachnid](https://github.com/dchuk/Arachnid),
 and was abstracted out of the [Tellurion Bot](https://github.com/samnissen/tellurion_bot).
 
 ## Usage
+
+### Typheous (cURL)
 
 The basic use of Arachnid2 is surfacing the responses from a domains'
 URLs by visiting a URL, collecting any links to the same domain
@@ -21,9 +25,6 @@ on that page, and visiting those to do the same.
 
 Hence, the simplest output would be to collect all of the responses
 while spidering from some URL.
-
-Set cached service url(optional)
-`export ARACHNID_CACHED_SERVICE_ADDRESS=http://localhost:9000`
 
 ```ruby
 require "arachnid2"
@@ -58,7 +59,7 @@ spider.crawl { |response|
 
 `Arachnid2#crawl` will return always `nil`.
 
-### Options
+#### Options
 
 ```ruby
 require "arachnid2"
@@ -67,7 +68,7 @@ url = "http://sixcolours.com"
 spider = Arachnid2.new(url)
 opts = {
   followlocation: true,
-  timeout: 10000,
+  timeout: 300,
   time_box: 60,
   max_urls: 50,
   :headers => {
@@ -95,26 +96,37 @@ spider.crawl(opts) { |response|
 }
 ```
 
-#### `time_box`
+##### `followlocation`
 
-The crawler will time-bound your spidering. If no valid integer is provided,
-it will crawl for 15 seconds before exiting. 600 seconds (10 minutes)
-is the current maximum, and any value above it will be reduced to 600.
+Tell Typhoeus to follow redirections.
 
-#### `max_urls`
+##### `timeout`
 
-The crawler will crawl a limited number of URLs before stopping.
-If no valid integer is provided, it will crawl for 50 URLs before exiting.
+Tell Typheous or Watir how long to wait for page load.
+
+##### `time_box`
+
+The crawler will time-bound your spidering.
+If no valid integer is provided,
+it will crawl for 15 seconds before exiting.
 10000 seconds is the current maximum,
 and any value above it will be reduced to 10000.
 
-#### `headers`
+##### `max_urls`
+
+The crawler will crawl a limited number of URLs before stopping.
+If no valid integer is provided,
+it will crawl for 50 URLs before exiting.
+10000 seconds is the current maximum,
+and any value above it will be reduced to 10000.
+
+##### `headers`
 
 This is a hash that represents any HTTP header key/value pairs you desire,
 and is passed directly to Typheous. Before it is sent, a default
 language and user agent are created:
 
-##### Defaults
+###### Defaults
 
 The HTTP header `Accept-Language` default is
 `en-IE, en-UK;q=0.9, en-NL;q=0.8, en-MT;q=0.7, en-LU;q=0.6, en;q=0.5, \*;0.4`
@@ -122,19 +134,19 @@ The HTTP header `Accept-Language` default is
 The HTTP header `User-Agent` default is
 `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.1 Safari/605.1.15`
 
-#### `proxy`
+##### `proxy`
 
 Provide your IP, port for a proxy. If required, provide credentials for
 authenticating to that proxy. Proxy options and handling are done
 by Typhoeus.
 
-#### `non_html_extensions`
+##### `non_html_extensions`
 
 This is the list of TLDs to ignore when collecting URLs from the page.
 The extensions are formatted as a hash of key/value pairs, where the value
 is an array of TLDs, and the keys represent the length of those TLDs.
 
-#### `memory_limit` and Docker
+##### `memory_limit` and Docker
 
 In case you are operating the crawler within a container, Arachnid2
 can attempt to prevent the container from running out of memory.
@@ -142,15 +154,75 @@ By default, it will end the crawl when the container uses >= 80%
 of its available memory. You can override this with the
 option.
 
-### Non-HTML links
+##### Non-HTML links
 
 The crawler attempts to stop itself from returning data from
 links that are not indicative of HTML, as detailed in
 `Arachnid2::NON_HTML_EXTENSIONS`.
 
+#### Caching (optional)
+
+If you have setup a cache to deduplicate crawls,
+set a cached service url
+`export ARACHNID_CACHED_SERVICE_ADDRESS=http://localhost:9000`
+
+This expects a push and get JSON API to respond
+to `/typhoeus_responses`, with a URL and the options pushed
+exactly as received as parameters. It will push any crawls
+to the service, and re-use any crawled pages
+if they are found to match.
+
+### With Watir
+
+Crawling with Watir works similarly, but requires you setup your
+environment for Watir, and headless web browsing if required.
+See the Watir documentation for more information.
+
+```ruby
+# ...
+Arachnid2.new(url).crawl_watir(opts)
+# -or-
+with_watir = true
+Arachnid2.new(url).crawl(opts, with_watir)
+```
+
+#### Options
+
+See the Typhoeus options above &mdash; most apply to Watir as well, with
+some exceptions:
+
+##### `proxy`
+
+Watir proxy options are formatted differently:
+
+```ruby
+proxy: {
+  http: "troy.show:8080",
+  ssl: "abed.show:8080"
+},
+```
+
+Proxy options handling is done by Watir.
+
+##### `headless`
+
+And it accepts an argument to make browse headlessly
+
+```ruby
+opts = { headless: true }
+```
+
+##### `followlocation` and `max_concurrency`
+
+These options do not apply to Watir, and will be ignored.
+
 ## Development
 
-TODO: this
+Fork the repo and run the tests
+
+```ruby
+bundle exec rspec spec/
+```
 
 ## Contributing
 
