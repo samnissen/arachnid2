@@ -1,11 +1,11 @@
 PATH
   remote: .
   specs:
-    arachnid2 (0.2.0)
+    arachnid2 (0.3.0)
       addressable
       adomain
       bloomfilter-rb
-      nokogiri
+      nokogiri (>= 1.8.5)
       typhoeus
       watir
       webdriver-user-agent (>= 7.6)

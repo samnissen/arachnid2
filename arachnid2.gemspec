@@ -32,5 +32,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "bloomfilter-rb"
   spec.add_dependency "adomain"
   spec.add_dependency "addressable"
-  spec.add_dependency "nokogiri"
+  spec.add_dependency "nokogiri", ">= 1.8.5"
 end
