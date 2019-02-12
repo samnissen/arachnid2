@@ -8,45 +8,7 @@ class Arachnid2
       @domain = Adomain[@url]
       @cached_data = []
     end
-    #
-    # Visits a URL, gathering links and visiting them,
-    # until running out of time, memory or attempts.
-    #
-    # @example
-    #   url = "https://daringfireball.net"
-    #   spider = Arachnid2.new(url)
-    #
-    #   opts = {
-    #     :followlocation => true,
-    #     :timeout => 25000,
-    #     :time_box => 30,
-    #     :headers => {
-    #       'Accept-Language' => "en-UK",
-    #       'User-Agent' => "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0",
-    #     },
-    #     :memory_limit => 89.99,
-    #     :proxy => {
-    #       :ip => "1.2.3.4",
-    #       :port => "1234",
-    #       :username => "sam",
-    #       :password => "coolcoolcool",
-    #     }
-    #     :non_html_extensions => {
-    #       3 => [".abc", ".xyz"],
-    #       4 => [".abcd"],
-    #       6 => [".abcdef"],
-    #       11 => [".abcdefghijk"]
-    #     }
-    #   }
-    #   responses = []
-    #   spider.crawl(opts) { |response|
-    #     responses << response
-    #   }
-    #
-    # @param [Hash] opts
-    #
-    # @return nil
-    #
+    
     def crawl(opts = {})
       preflight(opts)
       typhoeus_preflight

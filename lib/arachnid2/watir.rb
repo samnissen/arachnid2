@@ -6,17 +6,7 @@ class Arachnid2
       @url = url
       @domain = Adomain[@url]
     end
-    #
-    # Creates the object to execute the crawl
-    #
-    # @example
-    #   url = "https://daringfireball.net"
-    #   spider = Arachnid2.new(url)
-    #
-    # @param [String] url
-    #
-    # @return [Arachnid2] self
-    #
+    
     def crawl(opts)
       preflight(opts)
       watir_preflight
