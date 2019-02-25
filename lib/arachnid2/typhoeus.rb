@@ -8,30 +8,26 @@ class Arachnid2
       @domain = Adomain[@url]
       @cached_data = []
     end
-    
+
     def crawl(opts = {})
       preflight(opts)
       typhoeus_preflight
 
       until @global_queue.empty?
-        @max_concurrency.times do
+        max_concurrency.times do
           q = @global_queue.shift
 
-          break if @global_visited.size >= @crawl_options[:max_urls]
-          break if Time.now > @crawl_options[:time_limit]
-          break if memory_danger?
+          break if @global_visited.size >= crawl_options[:max_urls] || \
+                   Time.now > crawl_options[:time_limit] || \
+                   memory_danger?
 
           @global_visited.insert(q)
 
           request = ::Typhoeus::Request.new(q, request_options)
 
           data = load_data(@url, opts)
-          unless data.nil?
-            data.each do |response|
-              yield response
-            end
-            return
-          end
+          data.each { |response| yield response } and return unless data.nil?
+
           request.on_complete do |response|
             @cached_data.push(response)
             links = process(response.effective_url, response.body)
@@ -43,7 +39,7 @@ class Arachnid2
           end
 
           @hydra.queue(request)
-        end # @max_concurrency.times do
+        end # max_concurrency.times do
 
         @hydra.run
 
@@ -55,28 +51,23 @@ class Arachnid2
 
     private
       def typhoeus_preflight
-        @max_concurrency = max_concurrency
-        @hydra = ::Typhoeus::Hydra.new(:max_concurrency => @max_concurrency)
+        @hydra = ::Typhoeus::Hydra.new(:max_concurrency => max_concurrency)
         typhoeus_proxy_options
       end
 
       def max_concurrency
-        @max_concurrency ||= nil
+        return @max_concurrency if @max_concurrency
 
-        if !@max_concurrency
-          @max_concurrency = "#{@options[:max_concurrency]}".to_i
-          @max_concurrency = 1 unless (@max_concurrency > 0)
-        end
-
+        @max_concurrency = "#{@options[:max_concurrency]}".to_i
+        @max_concurrency = 1 unless (@max_concurrency > 0)
         @max_concurrency
       end
 
       def followlocation
-        if @followlocation.is_a?(NilClass)
-          @followlocation = @options[:followlocation]
-          @followlocation = true unless @followlocation.is_a?(FalseClass)
-        end
-        @followlocation
+        return @followlocation unless @followlocation.nil?
+
+        @followlocation = @options[:followlocation]
+        @followlocation = true unless @followlocation.is_a?(FalseClass)
       end
 
       def request_options
@@ -88,7 +79,7 @@ class Arachnid2
           cookiefile: @cookie_file.path,
           cookiejar: @cookie_file.path,
           headers: @options[:headers]
-        }.merge(@crawl_options[:proxy])
+        }.merge(crawl_options[:proxy])
 
         @request_options[:headers] ||= {}
         @request_options[:headers]['Accept-Language'] ||= DEFAULT_LANGUAGE

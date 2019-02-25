@@ -6,7 +6,7 @@ class Arachnid2
       @url = url
       @domain = Adomain[@url]
     end
-    
+
     def crawl(opts)
       preflight(opts)
       watir_preflight
@@ -15,8 +15,8 @@ class Arachnid2
         @already_retried = false
         q = @global_queue.shift
 
-        break if @global_visited.size >= @crawl_options[:max_urls]
-        break if Time.now > @crawl_options[:time_limit]
+        break if @global_visited.size >= crawl_options[:max_urls]
+        break if Time.now > crawl_options[:time_limit]
         break if memory_danger?
 
         @global_visited.insert(q)
@@ -72,12 +72,12 @@ class Arachnid2
       end
 
       def driver
-        if !@driver
+        unless @driver
           language   = @options.dig(:headers, "Accept-Language")  || DEFAULT_LANGUAGE
           user_agent = @options.dig(:headers, "User-Agent")       || DEFAULT_USER_AGENT
 
           @driver = Webdriver::UserAgent.driver(
-            browser: @browser_type,
+            browser: browser_type,
             accept_language_string: language,
             user_agent_string: user_agent
           )

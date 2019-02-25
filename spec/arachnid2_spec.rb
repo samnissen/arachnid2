@@ -48,18 +48,16 @@ RSpec.describe Arachnid2::Watir do
         @header_user_agent = browser.execute_script("return navigator.userAgent") unless @header_user_agent
       }
 
-      crawl_options = spider.instance_variable_get(:@crawl_options)
-      request_options = spider.instance_variable_get(:@request_options)
-      maximum_load_rate = spider.instance_variable_get(:@maximum_load_rate)
-      non_html_extensions = spider.instance_variable_get(:@non_html_extensions)
-      timeout = spider.instance_variable_get(:@timeout)
+      crawl_options = spider.crawl_options
+      maximum_load_rate = spider.maximum_load_rate
+      non_html_extensions = spider.non_html_extensions
+      timeout = spider.timeout
       make_headless = spider.instance_variable_get(:@make_headless)
 
       expect(crawl_options[:time_limit]).to be_a(Time)
       expect(crawl_options[:max_urls]).to be_an(Integer)
       expect(crawl_options[:proxy][:http]).to eq("troy.show:8080")
       expect(crawl_options[:proxy][:ssl]).to eq("abed.show:8080")
-      expect(request_options).to be_nil
       expect(@header_language).to include(opts[:headers]['Accept-Language'])
       expect(@header_user_agent).to eq(opts[:headers]['User-Agent'])
       expect(maximum_load_rate).to eq(39.99)
@@ -119,11 +117,11 @@ RSpec.describe Arachnid2::Typhoeus do
 
       crawl_options = spider.instance_variable_get(:@crawl_options)
       request_options = spider.instance_variable_get(:@request_options)
-      maximum_load_rate = spider.instance_variable_get(:@maximum_load_rate)
-      max_concurrency = spider.instance_variable_get(:@max_concurrency)
+      maximum_load_rate = spider.send(:maximum_load_rate)
+      max_concurrency = spider.send(:max_concurrency)
       hydra = spider.instance_variable_get(:@hydra)
-      followlocation = spider.instance_variable_get(:@followlocation)
-      non_html_extensions = spider.instance_variable_get(:@non_html_extensions)
+      followlocation = spider.send(:followlocation)
+      non_html_extensions = spider.send(:non_html_extensions)
       timeout = spider.instance_variable_get(:@timeout)
 
       expect(crawl_options[:time_limit]).to be_a(Time)
@@ -177,7 +175,7 @@ RSpec.describe Arachnid2::Exoskeleton do
       allow(File).to receive(:open).with(Arachnid2::MEMORY_USE_FILE, 'rb').and_return(use_file)
       allow(File).to receive(:open).with(Arachnid2::MEMORY_LIMIT_FILE, 'rb').and_return(limit_file)
 
-      expect(dummy.send(:memory_danger?)).to be_truthy
+      expect(dummy.memory_danger?).to be_truthy
     end
 
     it "does not stop execution when memory limit is not yet reached" do
@@ -187,7 +185,7 @@ RSpec.describe Arachnid2::Exoskeleton do
       allow(File).to receive(:open).with(Arachnid2::MEMORY_USE_FILE, 'rb').and_return(use_file)
       allow(File).to receive(:open).with(Arachnid2::MEMORY_LIMIT_FILE, 'rb').and_return(limit_file)
 
-      expect(dummy.send(:memory_danger?)).to be_falsey
+      expect(dummy.memory_danger?).to be_falsey
     end
   end
 end

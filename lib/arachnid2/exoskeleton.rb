@@ -1,9 +1,12 @@
 class Arachnid2
   module Exoskeleton
     def browser_type
-      return "#{@options[:browser_type]}".to_sym if @options[:browser_type]
+      unless @browser_type
+        @browser_type   = "#{@options[:browser_type]}".to_sym if @options[:browser_type]
+        @browser_type ||= :firefox
+      end
 
-      :firefox
+      @browser_type
     end
 
     def process(url, html)
@@ -33,22 +36,16 @@ class Arachnid2
     end
 
     def skip_link?(absolute_link)
-      internal  = internal_link?(absolute_link)
-      visited   = @global_visited.include?(absolute_link)
-      ignored   = extension_ignored?(absolute_link)
-      known     = @global_queue.include?(absolute_link)
-
-      !internal || visited || ignored || known
+      internal_link?(absolute_link) || \
+      @global_visited.include?(absolute_link) || \
+      extension_ignored?(absolute_link) || \
+      @global_queue.include?(absolute_link)
     end
 
     def preflight(opts)
       @options = opts
-      @crawl_options = crawl_options
-      @maximum_load_rate = maximum_load_rate
-      @non_html_extensions = non_html_extensions
       @global_visited = BloomFilter::Native.new(:size => 1000000, :hashes => 5, :seed => 1, :bucket => 8, :raise => true)
       @global_queue = [@url]
-      @browser_type = browser_type
     end
 
     def proxy
@@ -56,14 +53,10 @@ class Arachnid2
     end
 
     def non_html_extensions
-      @non_html_extensions ||= nil
+      return @non_html_extensions if @non_html_extensions
 
-      if !@non_html_extensions
-        @non_html_extensions   = @options[:non_html_extensions]
-        @non_html_extensions ||= DEFAULT_NON_HTML_EXTENSIONS
-      end
-
-      @non_html_extensions
+      @non_html_extensions   = @options[:non_html_extensions]
+      @non_html_extensions ||= DEFAULT_NON_HTML_EXTENSIONS
     end
 
     def bound_time
@@ -83,7 +76,7 @@ class Arachnid2
     end
 
     def timeout
-      if !@timeout
+      unless @timeout
         @timeout = @options[:timeout]
         @timeout = DEFAULT_TIMEOUT unless @timeout.is_a?(Integer)
         @timeout = DEFAULT_TIMEOUT if @timeout > MAXIMUM_TIMEOUT
@@ -93,21 +86,12 @@ class Arachnid2
     end
 
     def crawl_options
-      @crawl_options = {
-        max_urls: max_urls,
-        time_limit: time_limit
-      } if !@crawl_options
-
-      @crawl_options
+      @crawl_options ||= { max_urls: max_urls, time_limit: time_limit }
     end
 
-    def max_urls
-      bound_urls
-    end
+    alias_method :max_urls, :bound_urls
 
-    def time_limit
-      bound_time
-    end
+    alias_method :time_limit, :bound_time
 
     def make_absolute(href, root)
       Addressable::URI.parse(root).join(Addressable::URI.parse(href)).to_s
@@ -120,7 +104,7 @@ class Arachnid2
     def extension_ignored?(url)
       return false if url.empty?
 
-      !@non_html_extensions.values.flatten.find { |e| url.downcase.end_with? e.downcase }.nil?
+      !non_html_extensions.values.flatten.find { |e| url.downcase.end_with? e.downcase }.nil?
     end
 
     def memory_danger?
@@ -131,22 +115,18 @@ class Arachnid2
 
       return false unless ( (use > 0.0) && (@limit > 0.0) )
 
-      return ( ( (use / @limit) * 100.0 ) >= @maximum_load_rate )
+      return ( ( (use / @limit) * 100.0 ) >= maximum_load_rate )
     end
 
     def in_docker?
-      return false unless File.file?(MEMORY_USE_FILE)
-      true
+      File.file?(MEMORY_USE_FILE)
     end
 
     def maximum_load_rate
-      @maximum_load_rate ||= nil
+      return @maximum_load_rate if @maximum_load_rate
 
-      if !@maximum_load_rate
-        @maximum_load_rate = "#{@options[:memory_limit]}".to_f
-        @maximum_load_rate = DEFAULT_MAXIMUM_LOAD_RATE unless ((@maximum_load_rate > 0.0) && (@maximum_load_rate < 100.0))
-      end
-
+      @maximum_load_rate = "#{@options[:memory_limit]}".to_f
+      @maximum_load_rate = DEFAULT_MAXIMUM_LOAD_RATE unless ((@maximum_load_rate > 0.0) && (@maximum_load_rate < 100.0))
       @maximum_load_rate
     end
   end
