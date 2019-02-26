@@ -36,7 +36,7 @@ class Arachnid2
     end
 
     def skip_link?(absolute_link)
-      internal_link?(absolute_link) || \
+      !internal_link?(absolute_link) || \
       @global_visited.include?(absolute_link) || \
       extension_ignored?(absolute_link) || \
       @global_queue.include?(absolute_link)
