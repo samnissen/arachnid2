@@ -25,9 +25,12 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rake", "~> 10.0"
   spec.add_development_dependency "rspec", "~> 3.0"
 
+  spec.add_dependency "webdriver-user-agent", ">= 7.6"
+  spec.add_dependency "watir"
+  spec.add_dependency "webdrivers"
   spec.add_dependency "typhoeus"
   spec.add_dependency "bloomfilter-rb"
   spec.add_dependency "adomain"
   spec.add_dependency "addressable"
-  spec.add_dependency "nokogiri"
+  spec.add_dependency "nokogiri", ">= 1.8.5"
 end

@@ -1,5 +1,8 @@
 require "arachnid2/version"
-require "arachnid2/cashed_arachnid_responses"
+require "arachnid2/cached_arachnid_responses"
+require "arachnid2/exoskeleton"
+require "arachnid2/typhoeus"
+require "arachnid2/watir"
 
 require 'tempfile'
 require "typhoeus"
@@ -8,9 +11,12 @@ require "adomain"
 require "addressable/uri"
 require "nokogiri"
 require "base64"
+require "webdrivers"
+require "webdriver-user-agent"
+require "watir"
+
 
 class Arachnid2
-  include CashedArachnidResponses
   # META:
   #   About the origins of this crawling approach
   # The Crawler is heavily borrowed from by Arachnid.
@@ -22,7 +28,7 @@ class Arachnid2
   # And this was originally written as a part of Tellurion's bot
   # https://github.com/samnissen/tellurion_bot
 
-  MAX_CRAWL_TIME = 600
+  MAX_CRAWL_TIME = 10000
   BASE_CRAWL_TIME = 15
   MAX_URLS = 10000
   BASE_URLS = 50
@@ -58,8 +64,6 @@ class Arachnid2
   #
   def initialize(url)
     @url = url
-    @domain = Adomain[@url]
-    @cached_data = []
   end
 
   #
@@ -101,228 +105,15 @@ class Arachnid2
   #
   # @return nil
   #
-  def crawl(opts = {})
-    preflight(opts)
+  def crawl(opts = {}, with_watir = false)
+    crawl_watir and return if with_watir
 
-    until @global_queue.empty?
-      @max_concurrency.times do
-        q = @global_queue.shift
+    Arachnid2::Typhoeus.new(@url).crawl(opts, &Proc.new)
+  end
 
-        break if @global_visited.size >= @crawl_options[:max_urls]
-        break if Time.now > @crawl_options[:time_limit]
-        break if memory_danger?
-
-        @global_visited.insert(q)
-
-        request = Typhoeus::Request.new(q, request_options)
-
-        data = load_data(@url, opts)
-        unless data.nil?
-          data.each do |response|
-            yield response
-          end
-          return
-        end
-        request.on_complete do |response|
-          @cached_data.push(response)
-          links = process(response)
-          next unless links
-
-          yield response
-
-          vacuum(links, response)
-        end
-
-        @hydra.queue(request)
-      end # @max_concurrency.times do
-
-      @hydra.run
-
-    end # until @global_queue.empty?
-    put_cached_data(@url, opts, @cached_data) unless @cached_data.empty?
-  ensure
-    @cookie_file.close! if @cookie_file
-
-
-  end # def crawl(opts = {})
-
-  private
-    def process(response)
-      return false unless Adomain["#{response.effective_url}"].include? @domain
-
-      elements = Nokogiri::HTML.parse(response.body).css('a')
-      return elements.map {|link| link.attribute('href').to_s}.uniq.sort.delete_if {|href| href.empty? }
-    end
-
-    def vacuum(links, response)
-      links.each do |link|
-        next if link.match(/^\(|^javascript:|^mailto:|^#|^\s*$|^about:/)
-
-        begin
-          absolute_link = make_absolute(link, response.effective_url)
-
-          next if skip_link?(absolute_link)
-
-          @global_queue << absolute_link
-        rescue Addressable::URI::InvalidURIError
-        end
-      end
-    end
-
-    def skip_link?(absolute_link)
-      internal  = internal_link?(absolute_link)
-      visited   = @global_visited.include?(absolute_link)
-      ignored   = extension_ignored?(absolute_link)
-      known     = @global_queue.include?(absolute_link)
-
-      !internal || visited || ignored || known
-    end
-
-    def preflight(opts)
-      @options = opts
-      @crawl_options = crawl_options
-      @maximum_load_rate = maximum_load_rate
-      @max_concurrency = max_concurrency
-      @non_html_extensions = non_html_extensions
-      @hydra = Typhoeus::Hydra.new(:max_concurrency => @max_concurrency)
-      @global_visited = BloomFilter::Native.new(:size => 1000000, :hashes => 5, :seed => 1, :bucket => 8, :raise => true)
-      @global_queue = [@url]
-    end
-
-    def non_html_extensions
-      @non_html_extensions ||= nil
-
-      if !@non_html_extensions
-        @non_html_extensions   = @options[:non_html_extensions]
-        @non_html_extensions ||= DEFAULT_NON_HTML_EXTENSIONS
-      end
-
-      @non_html_extensions
-    end
-
-    def max_concurrency
-      @max_concurrency ||= nil
-
-      if !@max_concurrency
-        @max_concurrency = "#{@options[:max_concurrency]}".to_i
-        @max_concurrency = 1 unless (@max_concurrency > 0)
-      end
-
-      @max_concurrency
-    end
-
-    def bound_time
-      boundary = "#{@options[:time_box]}".to_i
-      boundary = BASE_CRAWL_TIME if boundary <= 0
-      boundary = MAX_CRAWL_TIME  if boundary >  MAX_CRAWL_TIME
-
-      return Time.now + boundary
-    end
-
-    def bound_urls
-      amount = "#{@options[:max_urls]}".to_i
-      amount = BASE_URLS if amount <= 0
-      amount = MAX_URLS  if amount >  MAX_URLS
-
-      amount
-    end
-
-    def followlocation
-      if @followlocation.is_a?(NilClass)
-        @followlocation = @options[:followlocation]
-        @followlocation = true unless @followlocation.is_a?(FalseClass)
-      end
-      @followlocation
-    end
-
-    def timeout
-      if !@timeout
-        @timeout = @options[:timeout]
-        @timeout = DEFAULT_TIMEOUT unless @timeout.is_a?(Integer)
-        @timeout = DEFAULT_TIMEOUT if @timeout > MAXIMUM_TIMEOUT
-        @timeout = DEFAULT_TIMEOUT if @timeout < MINIMUM_TIMEOUT
-      end
-      @timeout
-    end
-
-    def request_options
-      @cookie_file ||= Tempfile.new('cookies')
-
-      @request_options = {
-        timeout: timeout,
-        followlocation: followlocation,
-        cookiefile: @cookie_file.path,
-        cookiejar: @cookie_file.path,
-        headers: @options[:headers]
-      }
-
-      @request_options[:headers] ||= {}
-      @request_options[:headers]['Accept-Language'] ||= DEFAULT_LANGUAGE
-      @request_options[:headers]['User-Agent']      ||= DEFAULT_USER_AGENT
-
-      @request_options
-    end
-
-    def crawl_options
-      @crawl_options ||= nil
-
-      if !@crawl_options
-        @crawl_options = { :max_urls => max_urls, :time_limit => time_limit }
-
-        @crawl_options[:proxy] = "#{@options[:proxy][:ip]}:#{@options[:proxy][:port]}" if @options.dig(:proxy, :ip)
-        @crawl_options[:proxyuserpwd] = "#{@options[:proxy][:username]}:#{@options[:proxy][:password]}" if @options.dig(:proxy, :username)
-      end
-
-      @crawl_options
-    end
-
-    def max_urls
-      bound_urls
-    end
-
-    def time_limit
-      bound_time
-    end
-
-    def make_absolute(href, root)
-      Addressable::URI.parse(root).join(Addressable::URI.parse(href)).to_s
-    end
-
-    def internal_link?(absolute_url)
-      "#{Adomain[absolute_url]}".include? @domain
-    end
-
-    def extension_ignored?(url)
-      return false if url.empty?
-
-      !@non_html_extensions.values.flatten.find { |e| url.downcase.end_with? e.downcase }.nil?
-    end
-
-    def memory_danger?
-      return false unless in_docker?
-
-      use      = "#{File.open(MEMORY_USE_FILE, "rb").read}".to_f
-      @limit ||= "#{File.open(MEMORY_LIMIT_FILE, "rb").read}".to_f
-
-      return false unless ( (use > 0.0) && (@limit > 0.0) )
-
-      return ( ( (use / @limit) * 100.0 ) >= @maximum_load_rate )
-    end
-
-    def in_docker?
-      return false unless File.file?(MEMORY_USE_FILE)
-      true
-    end
-
-    def maximum_load_rate
-      @maximum_load_rate ||= nil
-
-      if !@maximum_load_rate
-        @maximum_load_rate = "#{@options[:memory_limit]}".to_f
-        @maximum_load_rate = DEFAULT_MAXIMUM_LOAD_RATE unless ((@maximum_load_rate > 0.0) && (@maximum_load_rate < 100.0))
-      end
-
-      @maximum_load_rate
-    end
+  def crawl_watir(opts)
+    Arachnid2::Watir.new(@url).crawl(opts, &Proc.new)
+  end
+  # https://mudge.name/2011/01/26/passing-blocks-in-ruby-without-block.html
 
 end
