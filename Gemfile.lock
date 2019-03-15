@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    arachnid2 (0.3.2)
+    arachnid2 (0.3.4)
       addressable
       adomain
       bloomfilter-rb

@@ -40,12 +40,16 @@ RSpec.describe Arachnid2::Watir do
           'Accept-Language' => "es-ES",
           'User-Agent' => "Sam's Custom Browser"
         },
-        headless: false
+        headless: false,
+        agent: :iphone,
+        orientation: :portrait
       }
 
       spider.crawl(opts) { |browser|
         @header_language = browser.execute_script("return navigator.language") unless @header_language
         @header_user_agent = browser.execute_script("return navigator.userAgent") unless @header_user_agent
+        @portrait = browser.execute_script("return (window.innerHeight > window.innerWidth)") unless @portrait
+        @window_width = browser.execute_script("return window.innerWidth") unless @window_width
       }
 
       crawl_options = spider.crawl_options
@@ -60,6 +64,8 @@ RSpec.describe Arachnid2::Watir do
       expect(crawl_options[:proxy][:ssl]).to eq("abed.show:8080")
       expect(@header_language).to include(opts[:headers]['Accept-Language'])
       expect(@header_user_agent).to eq(opts[:headers]['User-Agent'])
+      expect(@portrait).to be_truthy
+      expect(@window_width).to be < 525
       expect(maximum_load_rate).to eq(39.99)
       expect(timeout).to eq(12000)
       expect(non_html_extensions.values.flatten).to eq([".oh", ".omg", ".ohhai"])
