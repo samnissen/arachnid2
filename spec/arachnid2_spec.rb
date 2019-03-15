@@ -43,7 +43,7 @@ RSpec.describe Arachnid2::Watir do
         headless: false
       }
 
-      spider.crawl(opts){|browser|
+      spider.crawl(opts) { |browser|
         @header_language = browser.execute_script("return navigator.language") unless @header_language
         @header_user_agent = browser.execute_script("return navigator.userAgent") unless @header_user_agent
       }
@@ -80,6 +80,12 @@ RSpec.describe Arachnid2::Watir do
 
       expect(global_visited.size).to be > 0
       expect(responses.size).to be > 0
+    end
+
+    it "uses Watir when requested" do
+      spider = Arachnid2.new("http://test.com")
+      allow_any_instance_of(Arachnid2::Watir).to receive(:crawl).with(anything).and_return(true)
+      expect{ spider.crawl(opts = {}, with_watir = true) {} }.not_to raise_error
     end
   end
 end
