@@ -212,6 +212,21 @@ And it accepts an argument to make browse headlessly
 opts = { headless: true }
 ```
 
+##### `agent`
+
+It accepts an argument mapped to Webdriver::UserAgent::Driver's `agent` option
+
+```ruby
+opts = { agent: :desktop }
+```
+##### `orientation`
+
+And it accepts an argument mapped to Webdriver::UserAgent::Driver's `orientation` option
+
+```ruby
+opts = { orientation: :landscape }
+```
+
 ##### `followlocation` and `max_concurrency`
 
 These options do not apply to Watir, and will be ignored.

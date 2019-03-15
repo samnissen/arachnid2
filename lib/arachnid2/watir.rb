@@ -1,5 +1,8 @@
 class Arachnid2
   class Watir
+    DEFAULT_AGENT = :desktop
+    DEFAULT_ORIENTATION = :landscape
+
     include Arachnid2::Exoskeleton
 
     def initialize(url)
@@ -73,11 +76,15 @@ class Arachnid2
 
       def driver
         unless @driver
-          language   = @options.dig(:headers, "Accept-Language")  || DEFAULT_LANGUAGE
-          user_agent = @options.dig(:headers, "User-Agent")       || DEFAULT_USER_AGENT
+          language    = @options.dig(:headers, "Accept-Language") || DEFAULT_LANGUAGE
+          user_agent  = @options.dig(:headers, "User-Agent")      || DEFAULT_USER_AGENT
+          agent       = @options.dig(:agent)                      || DEFAULT_AGENT
+          orientation = @options.dig(:orientation)                || DEFAULT_ORIENTATION
 
           @driver = Webdriver::UserAgent.driver(
             browser: browser_type,
+            agent: agent,
+            orientation: orientation,
             accept_language_string: language,
             user_agent_string: user_agent
           )
