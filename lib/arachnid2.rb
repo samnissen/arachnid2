@@ -106,7 +106,7 @@ class Arachnid2
   # @return nil
   #
   def crawl(opts = {}, with_watir = false)
-    crawl_watir and return if with_watir
+    crawl_watir(opts) and return if with_watir
 
     Arachnid2::Typhoeus.new(@url).crawl(opts, &Proc.new)
   end
