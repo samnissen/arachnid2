@@ -25,7 +25,18 @@ class Arachnid2
         @global_visited.insert(q)
 
         begin
-          browser.goto q
+          begin
+            browser.goto q
+          rescue Selenium::WebDriver::Error::UnknownError => e
+            # Firefox and Selenium, in their infinite wisdom
+            # raise an error when a page cannot be loaded.
+            # At the time of writing this, the page at
+            # thewirecutter.com/cars/accessories-auto
+            # causes such an issue (too many redirects).
+            # This error handling moves us on from those pages.
+            raise e unless e.message =~ /.*Reached error page.*/i
+            next
+          end
           links = process(browser.url, browser.body.html)
           next unless links
 
@@ -35,6 +46,8 @@ class Arachnid2
         rescue => e
           raise e if @already_retried
           raise e unless "#{e.class}".include?("Selenium") || "#{e.class}".include?("Watir")
+          @browser.close if @browser rescue nil
+          @headless.destroy if @headless rescue nil
           @browser = nil
           @already_retried = true
           retry
