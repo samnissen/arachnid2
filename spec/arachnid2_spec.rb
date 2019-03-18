@@ -91,7 +91,16 @@ RSpec.describe Arachnid2::Watir do
     it "uses Watir when requested" do
       spider = Arachnid2.new("http://test.com")
       allow_any_instance_of(Arachnid2::Watir).to receive(:crawl).with(anything).and_return(true)
-      expect{ spider.crawl(opts = {}, with_watir = true) {} }.not_to raise_error
+      expect{ spider.crawl(opts = {max_urls: 1, time_box: 1}, with_watir = true) {} }.not_to raise_error
+    end
+
+    it "only uses one crawling technology type" do
+      spider = Arachnid2.new("http://daringfireball.net")
+      # allow_any_instance_of(Arachnid2::Watir).to receive(:crawl).with(anything).and_return(true)
+      expect_any_instance_of(Arachnid2::Typhoeus).not_to receive(:crawl)
+      klasses = []
+      spider.crawl(opts = {max_urls: 2, time_box: 5}, with_watir = true) {|x| klasses << x.class }
+      klasses.each{|x| puts x }
     end
   end
 end
