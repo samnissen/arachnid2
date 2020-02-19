@@ -17,6 +17,7 @@ class Arachnid2
       until @global_queue.empty?
         @already_retried = false
         q = @global_queue.shift
+        links = nil
 
         break if @global_visited.size >= crawl_options[:max_urls]
         break if Time.now > crawl_options[:time_limit]
