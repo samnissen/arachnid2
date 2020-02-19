@@ -37,19 +37,18 @@ class Arachnid2
             raise e unless e.message =~ /.*Reached error page.*/i
             next
           end
-          links = process(browser.url, browser.body.html)
+          links = process(browser.url, browser.body.html) if browser.body.exists?
           next unless links
 
           yield browser
 
           vacuum(links, browser.url)
         rescue => e
-          raise e if @already_retried
-          raise e unless "#{e.class}".include?("Selenium") || "#{e.class}".include?("Watir")
-          @browser.close if @browser rescue nil
-          @headless.destroy if @headless rescue nil
-          @browser = nil
-          @already_retried = true
+          next if e.class == Net::ReadTimeout
+
+          raise e if raise_before_retry?(e.class)
+
+          reset_for_retry
           retry
         end
 
@@ -60,6 +59,19 @@ class Arachnid2
     end
 
     private
+      def raise_before_retry?(klass)
+        @already_retried || \
+          "#{klass}".include?("Selenium") || \
+          "#{klass}".include?("Watir")
+      end
+
+      def reset_for_retry
+        @browser.close if @browser rescue nil
+        @headless.destroy if @headless rescue nil
+        @browser = nil
+        @already_retried = true
+      end
+
       def browser
         unless @browser
           behead if @make_headless

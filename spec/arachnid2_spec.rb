@@ -98,9 +98,32 @@ RSpec.describe Arachnid2::Watir do
       spider = Arachnid2.new("http://daringfireball.net")
       # allow_any_instance_of(Arachnid2::Watir).to receive(:crawl).with(anything).and_return(true)
       expect_any_instance_of(Arachnid2::Typhoeus).not_to receive(:crawl)
-      klasses = []
-      spider.crawl(opts = {max_urls: 2, time_box: 5}, with_watir = true) {|x| klasses << x.class }
-      klasses.each{|x| puts x }
+      spider.crawl(opts = {max_urls: 2, time_box: 5}, with_watir = true) {}
+    end
+
+    it "crawls past any Net::ReadTimeout issues" do
+      spider = Arachnid2.new("https://www.themcelroy.family")
+      opts = {max_urls: 3, time_box: 10}
+      with_watir = true
+
+      allow_any_instance_of(::Watir::Browser).to receive(:goto).with(anything).and_raise(Net::ReadTimeout)
+
+      expect{
+        spider.crawl(opts, with_watir) {}
+      }.not_to raise_error
+    end
+
+    it "does not fail when the browser cannot locate the <body>" do
+      spider = Arachnid2.new("https://www.themcelroy.family")
+      opts = {max_urls: 3, time_box: 10}
+      with_watir = true
+
+      allow_any_instance_of(::Watir::Body).to receive(:html).and_raise(Watir::Exception::UnknownObjectException)
+      allow_any_instance_of(::Watir::Body).to receive(:exists?).and_return(false)
+
+      expect{
+        spider.crawl(opts, with_watir) {}
+      }.not_to raise_error
     end
   end
 end
