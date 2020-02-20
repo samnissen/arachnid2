@@ -13,9 +13,9 @@ class Arachnid2
     def crawl(opts)
       preflight(opts)
       watir_preflight
+      @already_retried = false
 
       until @global_queue.empty?
-        @already_retried = false
         q = @global_queue.shift
         links = nil
 
@@ -44,13 +44,10 @@ class Arachnid2
           yield browser
 
           vacuum(links, browser.url)
+        rescue Selenium::WebDriver::Error::NoSuchWindowError, Net::ReadTimeout => e
         rescue => e
-          next if e.class == Net::ReadTimeout
-
           raise e if raise_before_retry?(e.class)
-
           reset_for_retry
-          retry
         end
 
       end # until @global_queue.empty?
@@ -69,6 +66,8 @@ class Arachnid2
       def reset_for_retry
         @browser.close if @browser rescue nil
         @headless.destroy if @headless rescue nil
+        @driver.quit if @headless rescue nil
+        @driver = nil
         @browser = nil
         @already_retried = true
       end
