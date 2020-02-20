@@ -113,6 +113,18 @@ RSpec.describe Arachnid2::Watir do
       }.not_to raise_error
     end
 
+    it "crawls past any Selenium::WebDriver::Error::NoSuchWindowError issues" do
+      spider = Arachnid2.new("https://www.themcelroy.family")
+      opts = {max_urls: 3, time_box: 10}
+      with_watir = true
+
+      allow_any_instance_of(::Watir::Browser).to receive(:goto).with(anything).and_raise(Selenium::WebDriver::Error::NoSuchWindowError)
+
+      expect{
+        spider.crawl(opts, with_watir) {}
+      }.not_to raise_error
+    end
+
     it "does not fail when the browser cannot locate the <body>" do
       spider = Arachnid2.new("https://www.themcelroy.family")
       opts = {max_urls: 3, time_box: 10}
@@ -124,6 +136,62 @@ RSpec.describe Arachnid2::Watir do
       expect{
         spider.crawl(opts, with_watir) {}
       }.not_to raise_error
+    end
+
+    it "rescues one error when the browser connection is lost" do
+      spider = Arachnid2::Watir.new("https://stratechery.com")
+      opts = {max_urls: 3, time_box: 60}
+
+      Object.const_set("MyCustomTestError", Class.new(StandardError))
+
+      allow_any_instance_of(Arachnid2::Watir).to receive(:preflight).with(opts).and_return(true)
+      allow_any_instance_of(Arachnid2::Watir).to receive(:watir_preflight).and_return(true)
+
+      queue = [
+        "https://stratechery.com",
+        "http://stratechery.com/about/",
+        "https://stratechery.com/concepts/"
+      ]
+      spider.instance_variable_set(:@options, opts)
+      spider.instance_variable_set(:@global_queue, queue)
+      bf = BloomFilter::Native.new(:size => 1000000, :hashes => 5, :seed => 1, :bucket => 8, :raise => true)
+      spider.instance_variable_set(:@global_visited, bf)
+      spider.instance_variable_set(:@make_headless, !OS.mac?)
+
+      browser = spider.send(:create_browser)
+      spider.instance_variable_set(:@browser, browser)
+
+      allow(browser).to receive(:url).and_raise(MyCustomTestError)
+
+      expect{
+        spider.crawl(opts) {}
+      }.not_to raise_error
+    end
+
+    it "stops after more than one error" do
+      spider = Arachnid2::Watir.new("https://stratechery.com")
+      opts = {max_urls: 3, time_box: 60}
+
+      Object.const_set("MyCustomTestError", Class.new(StandardError)) unless Object.const_defined?("MyCustomTestError")
+
+      allow_any_instance_of(::Watir::Browser).to receive(:url).and_raise(MyCustomTestError)
+      allow_any_instance_of(Arachnid2::Watir).to receive(:preflight).with(opts).and_return(true)
+      allow_any_instance_of(Arachnid2::Watir).to receive(:watir_preflight).and_return(true)
+
+      queue = [
+        "https://stratechery.com",
+        "http://stratechery.com/about/",
+        "https://stratechery.com/concepts/"
+      ]
+      spider.instance_variable_set(:@options, opts)
+      spider.instance_variable_set(:@global_queue, queue)
+      bf = BloomFilter::Native.new(:size => 1000000, :hashes => 5, :seed => 1, :bucket => 8, :raise => true)
+      spider.instance_variable_set(:@global_visited, bf)
+      spider.instance_variable_set(:@make_headless, !OS.mac?)
+
+      expect{
+        spider.crawl(opts) {}
+      }.to raise_error(MyCustomTestError)
     end
   end
 end
