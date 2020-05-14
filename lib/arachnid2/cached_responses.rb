@@ -1,6 +1,6 @@
 require 'net/http'
 require 'json'
-module CachedArachnidResponses
+module CachedResponses
   CACHE_SERVICE_URL = ENV['ARACHNID_CACHED_SERVICE_ADDRESS'].freeze
 
   def load_data(_url, _options)

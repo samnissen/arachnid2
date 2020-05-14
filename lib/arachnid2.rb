@@ -1,5 +1,5 @@
 require "arachnid2/version"
-require "arachnid2/cached_arachnid_responses"
+require "arachnid2/cached_responses"
 require "arachnid2/exoskeleton"
 require "arachnid2/typhoeus"
 require "arachnid2/watir"

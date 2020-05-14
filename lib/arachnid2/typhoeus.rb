@@ -1,6 +1,6 @@
 class Arachnid2
   class Typhoeus
-    include CachedArachnidResponses
+    include CachedResponses
     include Arachnid2::Exoskeleton
 
     def initialize(url)

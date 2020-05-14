@@ -1,5 +1,7 @@
 class Arachnid2
   class Watir
+    include CachedResponses
+
     DEFAULT_AGENT = :desktop
     DEFAULT_ORIENTATION = :landscape
 
@@ -48,15 +50,30 @@ class Arachnid2
                 "is retrying once after an error: " \
                 "#{e.class} - #{e.message}"
           puts msg
+          e.backtrace[0..4].each{|l| puts "\t#{l}"}; puts "..."
           reset_for_retry
         end
       end
 
-      def browse_links(q)
-        browser = load_data(q, opts)
-        
+      def browse_links(url)
+        cached_browser = load_data(url, @options)
+        browser_to_use = cached_browser || browser
+
+        unless cached_browser
+          navigation_success = navigate(url)
+          return unless navigation_success
+        end
+
+        yield browser_to_use
+
+        put_cached_data(browser.url, @options, browser) unless cached_browser
+
+        process(browser_to_use.url, browser_to_use.body.html) if browser_to_use.body.exists?
+      end
+
+      def navigate(url)
         begin
-          browser.goto q
+          browser.goto url
         rescue Selenium::WebDriver::Error::UnknownError => e
           # Firefox and Selenium, in their infinite wisdom
           # raise an error when a page cannot be loaded.
@@ -68,9 +85,7 @@ class Arachnid2
           return
         end
 
-        yield browser
-
-        process(browser.url, browser.body.html) if browser.body.exists?
+        true
       end
 
       def time_to_stop?
