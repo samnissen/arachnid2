@@ -23,8 +23,8 @@ class Arachnid2
 
           request = ::Typhoeus::Request.new(q, request_options)
 
-          data = load_data(@url, opts)
-          data.each { |response| yield response } and return unless data.nil?
+          data = load_data(q, opts)
+          yield data and return unless data.nil?
 
           requestable = after_request(request, &Proc.new)
 
