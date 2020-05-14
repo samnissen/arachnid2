@@ -19,37 +19,11 @@ class Arachnid2
         q = @global_queue.shift
         links = nil
 
-        break if @global_visited.size >= crawl_options[:max_urls]
-        break if Time.now > crawl_options[:time_limit]
-        break if memory_danger?
+        break if time_to_stop?
 
         @global_visited.insert(q)
 
-        begin
-          begin
-            browser.goto q
-          rescue Selenium::WebDriver::Error::UnknownError => e
-            # Firefox and Selenium, in their infinite wisdom
-            # raise an error when a page cannot be loaded.
-            # At the time of writing this, the page at
-            # thewirecutter.com/cars/accessories-auto
-            # causes such an issue (too many redirects).
-            # This error handling moves us on from those pages.
-            raise e unless e.message =~ /.*Reached error page.*/i
-            next
-          end
-          links = process(browser.url, browser.body.html) if browser.body.exists?
-          next unless links
-
-          yield browser
-
-          vacuum(links, browser.url)
-        rescue Selenium::WebDriver::Error::NoSuchWindowError, Net::ReadTimeout => e
-        rescue => e
-          raise e if raise_before_retry?(e.class)
-          reset_for_retry
-        end
-
+        make_request(q, &Proc.new)
       end # until @global_queue.empty?
     ensure
       @browser.close if @browser rescue nil
@@ -57,6 +31,52 @@ class Arachnid2
     end
 
     private
+      def make_request(q)
+        begin
+          links = browse_links(q, &Proc.new)
+          return unless links
+
+          vacuum(links, browser.url)
+        rescue Selenium::WebDriver::Error::NoSuchWindowError, Net::ReadTimeout => e
+          msg = "WARNING [arachnid2] Arachnid2::Watir#make_request " \
+                "is ignoring an error: " \
+                "#{e.class} - #{e.message}"
+          puts msg
+        rescue => e
+          raise e if raise_before_retry?(e.class)
+          msg = "WARNING [arachnid2] Arachnid2::Watir#make_request " \
+                "is retrying once after an error: " \
+                "#{e.class} - #{e.message}"
+          puts msg
+          reset_for_retry
+        end
+      end
+
+      def browse_links(q)
+        begin
+          browser.goto q
+        rescue Selenium::WebDriver::Error::UnknownError => e
+          # Firefox and Selenium, in their infinite wisdom
+          # raise an error when a page cannot be loaded.
+          # At the time of writing this, the page at
+          # thewirecutter.com/cars/accessories-auto
+          # causes such an issue (too many redirects).
+          # This error handling moves us on from those pages.
+          raise e unless e.message =~ /.*Reached error page.*/i
+          return
+        end
+
+        yield browser
+
+        process(browser.url, browser.body.html) if browser.body.exists?
+      end
+
+      def time_to_stop?
+        @global_visited.size >= crawl_options[:max_urls] || \
+                 Time.now > crawl_options[:time_limit] || \
+                 memory_danger?
+      end
+
       def raise_before_retry?(klass)
         @already_retried || \
           "#{klass}".include?("Selenium") || \

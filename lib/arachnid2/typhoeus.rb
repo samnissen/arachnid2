@@ -17,9 +17,7 @@ class Arachnid2
         max_concurrency.times do
           q = @global_queue.shift
 
-          break if @global_visited.size >= crawl_options[:max_urls] || \
-                   Time.now > crawl_options[:time_limit] || \
-                   memory_danger?
+          break if time_to_stop?
 
           @global_visited.insert(q)
 
@@ -28,17 +26,9 @@ class Arachnid2
           data = load_data(@url, opts)
           data.each { |response| yield response } and return unless data.nil?
 
-          request.on_complete do |response|
-            @cached_data.push(response)
-            links = process(response.effective_url, response.body)
-            next unless links
+          requestable = after_request(request, &Proc.new)
 
-            yield response
-
-            vacuum(links, response.effective_url)
-          end
-
-          @hydra.queue(request)
+          @hydra.queue(request) if requestable
         end # max_concurrency.times do
 
         @hydra.run
@@ -50,6 +40,26 @@ class Arachnid2
     end # def crawl(opts = {})
 
     private
+      def after_request(request)
+        request.on_complete do |response|
+          @cached_data.push(response)
+          links = process(response.effective_url, response.body)
+          return unless links
+
+          yield response
+
+          vacuum(links, response.effective_url)
+        end
+
+        true
+      end
+
+      def time_to_stop?
+        @global_visited.size >= crawl_options[:max_urls] || \
+                 Time.now > crawl_options[:time_limit] || \
+                 memory_danger?
+      end
+
       def typhoeus_preflight
         @hydra = ::Typhoeus::Hydra.new(:max_concurrency => max_concurrency)
         typhoeus_proxy_options
