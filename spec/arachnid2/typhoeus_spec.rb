@@ -75,7 +75,9 @@ RSpec.describe Arachnid2::Typhoeus do
       let!(:url) { "https://daringfireball.net" }
       let!(:spider) { Arachnid2::Typhoeus.new(url) }
       let!(:opts) { { time_box: 10, max_urls: 1 } }
-      let!(:payload) { OpenStruct.new({}) }
+      let!(:payload) {
+        OpenStruct.new({effective_url: "http://daringfireball.net", body: "<html></html>"})
+      } # note that the url and effective_url domains must match
 
       before(:each) do
         allow(spider).to receive(:load_data).with(url, opts).and_return(payload)

@@ -53,6 +53,8 @@ class Arachnid2
       end
 
       def browse_links(q)
+        browser = load_data(q, opts)
+        
         begin
           browser.goto q
         rescue Selenium::WebDriver::Error::UnknownError => e

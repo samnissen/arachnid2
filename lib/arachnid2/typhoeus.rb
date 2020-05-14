@@ -18,23 +18,18 @@ class Arachnid2
           q = @global_queue.shift
 
           break if time_to_stop?
-
           @global_visited.insert(q)
 
+          found_in_cache = use_cache(q, opts, &Proc.new)
+          return if found_in_cache
+
           request = ::Typhoeus::Request.new(q, request_options)
-
-          data = load_data(q, opts)
-          yield data and return unless data.nil?
-
           requestable = after_request(request, &Proc.new)
-
           @hydra.queue(request) if requestable
         end # max_concurrency.times do
 
         @hydra.run
-
       end # until @global_queue.empty?
-      put_cached_data(@url, opts, @cached_data) unless @cached_data.empty?
     ensure
       @cookie_file.close! if @cookie_file
     end # def crawl(opts = {})
@@ -42,16 +37,30 @@ class Arachnid2
     private
       def after_request(request)
         request.on_complete do |response|
-          @cached_data.push(response)
-          links = process(response.effective_url, response.body)
-          return unless links
+          cacheable = use_response(response, &Proc.new)
+          return unless cacheable
 
-          yield response
-
-          vacuum(links, response.effective_url)
+          put_cached_data(response.effective_url, @options, response)
         end
 
         true
+      end
+
+      def use_response(response)
+        links = process(response.effective_url, response.body)
+        return unless links
+
+        yield response
+
+        vacuum(links, response.effective_url)
+        true
+      end
+
+      def use_cache(url, options)
+        data = load_data(url, options)
+        use_response(data, &Proc.new) if data
+
+        data
       end
 
       def time_to_stop?
