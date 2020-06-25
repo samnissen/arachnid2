@@ -6,7 +6,7 @@ module CachedResponses
   def load_data(_url, _options)
     return if check_config
 
-    uri = URI("#{CACHE_SERVICE_URL}/typhoeus_responses?url=#{@url}&options=#{@options.to_json}")
+    uri = URI("#{CACHE_SERVICE_URL}/typhoeus_responses?url=#{@url}&options=#{@options}")
     req = Net::HTTP::Get.new(uri)
     req['Accept'] = 'json'
     Net::HTTP.start(uri.hostname, uri.port) do |http|
@@ -15,7 +15,7 @@ module CachedResponses
 
       body = ::JSON.parse(response.body)
       responses_list = Base64.decode64(body['encrypted_response'])
-      return Marshal.load responses_list # here we get a Typhoeus::Response or Watir::Browser
+      return Marshal.load responses_list # here we get an Array of `Typhoeus::Response`s
     end
   rescue StandardError
     nil
