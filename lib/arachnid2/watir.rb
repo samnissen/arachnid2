@@ -1,7 +1,5 @@
 class Arachnid2
   class Watir
-    include CachedResponses
-
     DEFAULT_AGENT = :desktop
     DEFAULT_ORIENTATION = :landscape
 
@@ -56,19 +54,11 @@ class Arachnid2
       end
 
       def browse_links(url)
-        cached_browser = load_data(url, @options)
-        browser_to_use = cached_browser || browser
+        return unless navigate(url)
 
-        unless cached_browser
-          navigation_success = navigate(url)
-          return unless navigation_success
-        end
+        yield browser
 
-        yield browser_to_use
-
-        put_cached_data(browser.url, @options, browser) unless cached_browser
-
-        process(browser_to_use.url, browser_to_use.body.html) if browser_to_use.body.exists?
+        process(browser.url, browser.body.html) if browser.body.exists?
       end
 
       def navigate(url)

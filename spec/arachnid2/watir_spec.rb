@@ -181,34 +181,5 @@ RSpec.describe Arachnid2::Watir do
         spider.crawl(opts) {}
       }.to raise_error(MyCustomTestError)
     end
-
-    context "data is available in the cache" do
-      let!(:url) { "https://daringfireball.net/" }
-      let!(:spider) { Arachnid2::Watir.new(url) }
-      let!(:opts) { { time_box: 30, max_urls: 2 } }
-      let!(:found_url) { "https://daringfireball.net/archive/" }
-      let!(:payload) {
-        OpenStruct.new({
-          url: "https://daringfireball.net/",
-          body: OpenStruct.new({
-            html: "<html><a href=\"#{found_url}\" /></html>",
-            :"exists?" => true
-          })
-        })
-      } # note that the url and effective_url domains must match
-
-      before(:each) do
-        allow(spider).to receive(:load_data).with(url, opts).and_return(payload)
-        allow(spider).to receive(:load_data).with(found_url, opts).and_return(nil)
-      end
-
-      it "loads data from the cache" do
-        responses = []
-        expect(spider).to receive(:load_data).exactly(:twice)
-
-        spider.crawl(opts){|r| responses << r}
-        expect(responses).to include(payload)
-      end
-    end
   end
 end
