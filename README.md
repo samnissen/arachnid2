@@ -186,6 +186,36 @@ with_watir = true
 Arachnid2.new(url).crawl(opts, with_watir)
 ```
 
+Arachnid2 has base defaults which you might want to address when
+employing Watir.
+
+* First, the default crawl time is 15 seconds.
+As browser page loads can take this long, you will probably want to
+set a higher crawl time.
+* Simply storing the browser is not a great idea, since it will
+be inaccessible after it is closed. Instead, consider nabbing the
+HTML, cookies, or whatever content is required during the crawl.
+* Finally, note that Firefox is the default browser.
+
+
+```ruby
+require 'arachnid2'
+
+with_watir = true
+responses = []
+url = "http://maximumfun.org"
+max = 60
+browser = :chrome
+opts = {time_box: max, browser_type: browser}
+
+spider = Arachnid2.new(url)
+spider.crawl(opts, with_watir) do |response|
+  response.body.wait_until(&:present?)
+  responses << response.body.html if response.body.present?
+end
+
+```
+
 #### Options
 
 See the Typhoeus options above &mdash; most apply to Watir as well, with

@@ -1,6 +1,6 @@
 class Arachnid2
   class Typhoeus
-    include CachedArachnidResponses
+    include CachedResponses
     include Arachnid2::Exoskeleton
 
     def initialize(url)
@@ -17,39 +17,58 @@ class Arachnid2
         max_concurrency.times do
           q = @global_queue.shift
 
-          break if @global_visited.size >= crawl_options[:max_urls] || \
-                   Time.now > crawl_options[:time_limit] || \
-                   memory_danger?
-
+          break if time_to_stop?
           @global_visited.insert(q)
 
+          found_in_cache = use_cache(q, opts, &Proc.new)
+          return if found_in_cache
+
           request = ::Typhoeus::Request.new(q, request_options)
-
-          data = load_data(@url, opts)
-          data.each { |response| yield response } and return unless data.nil?
-
-          request.on_complete do |response|
-            @cached_data.push(response)
-            links = process(response.effective_url, response.body)
-            next unless links
-
-            yield response
-
-            vacuum(links, response.effective_url)
-          end
-
-          @hydra.queue(request)
+          requestable = after_request(request, &Proc.new)
+          @hydra.queue(request) if requestable
         end # max_concurrency.times do
 
         @hydra.run
-
       end # until @global_queue.empty?
-      put_cached_data(@url, opts, @cached_data) unless @cached_data.empty?
     ensure
       @cookie_file.close! if @cookie_file
     end # def crawl(opts = {})
 
     private
+      def after_request(request)
+        request.on_complete do |response|
+          cacheable = use_response(response, &Proc.new)
+          return unless cacheable
+
+          put_cached_data(response.effective_url, @options, response)
+        end
+
+        true
+      end
+
+      def use_response(response)
+        links = process(response.effective_url, response.body)
+        return unless links
+
+        yield response
+
+        vacuum(links, response.effective_url)
+        true
+      end
+
+      def use_cache(url, options)
+        data = load_data(url, options)
+        use_response(data, &Proc.new) if data
+
+        data
+      end
+
+      def time_to_stop?
+        @global_visited.size >= crawl_options[:max_urls] || \
+                 Time.now > crawl_options[:time_limit] || \
+                 memory_danger?
+      end
+
       def typhoeus_preflight
         @hydra = ::Typhoeus::Hydra.new(:max_concurrency => max_concurrency)
         typhoeus_proxy_options

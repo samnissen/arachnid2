@@ -1,6 +1,6 @@
 require 'net/http'
 require 'json'
-module CachedArachnidResponses
+module CachedResponses
   CACHE_SERVICE_URL = ENV['ARACHNID_CACHED_SERVICE_ADDRESS'].freeze
 
   def load_data(_url, _options)
@@ -15,7 +15,7 @@ module CachedArachnidResponses
 
       body = ::JSON.parse(response.body)
       responses_list = Base64.decode64(body['encrypted_response'])
-      return Marshal.load responses_list # here we get array of Typhoeus::Response
+      return Marshal.load responses_list # here we get an Array of `Typhoeus::Response`s
     end
   rescue StandardError
     nil

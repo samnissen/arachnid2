@@ -10,7 +10,7 @@ class Arachnid2
     end
 
     def process(url, html)
-      return false unless Adomain["#{url}"].include? @domain
+      return false unless Adomain["#{url}"]&.include? @domain
 
       extract_hrefs(html)
     end
