@@ -4,13 +4,11 @@
 
 Arachnid2 is a simple, fast web-crawler written in Ruby.
 You can use [typhoeus](https://github.com/typhoeus/typhoeus)
-to get HTTP requests, or [Watir](https://github.com/watir/watir)
-to render pages.
-
-[bloomfilter-rb](https://github.com/igrigorik/bloomfilter-rb)
-stores the URLs it will get and has gotten,
+to make HTTP requests, or [Watir](https://github.com/watir/watir)
+to render pages. [bloomfilter-rb](https://github.com/igrigorik/bloomfilter-rb)
+stores the URLs,
 and [nokogiri](https://github.com/sparklemotion/nokogiri)
-to find the URLs on each webpage, adding them to the bloomfilter queue.
+finds the URLs on each webpage.
 
 Arachnid2 is a successor to [Arachnid](https://github.com/dchuk/Arachnid),
 and was abstracted out of the [Tellurion Bot](https://github.com/samnissen/tellurion_bot).
@@ -19,12 +17,12 @@ and was abstracted out of the [Tellurion Bot](https://github.com/samnissen/tellu
 
 ### Typheous (cURL)
 
-The basic use of Arachnid2 is surfacing the responses from a domains'
-URLs by visiting a URL, collecting any links to the same domain
-on that page, and visiting those to do the same.
+The default use case for Arachnid2 is surfacing responses from
+a domains' URLs by visiting a URL, collecting any links to the
+same domain on that page, and visiting those to do the same.
 
-Hence, the simplest output would be to collect all of the responses
-while spidering from some URL.
+The simplest way to use the gem is collecting all of the
+responses while spidering from some URL.
 
 ```ruby
 require "arachnid2"
@@ -174,15 +172,16 @@ if they are found to match.
 
 ### With Watir
 
-Crawling with Watir works similarly, but requires you setup your
-environment for Watir, and headless web browsing if required.
-See the Watir documentation for more information.
+Arachnid2 can crawl links with Watir, gathering up links
+like crawling with Typhoeus, but with pages that are
+actually rendered. You can access this option in one
+of two ways:
 
 ```ruby
 # ...
 Arachnid2.new(url).crawl_watir(opts)
 # -or-
-with_watir = true
+with_watir = true  # the default is `false`
 Arachnid2.new(url).crawl(opts, with_watir)
 ```
 
@@ -192,9 +191,10 @@ employing Watir.
 * First, the default crawl time is 15 seconds.
 As browser page loads can take this long, you will probably want to
 set a higher crawl time.
-* Simply storing the browser is not a great idea, since it will
-be inaccessible after it is closed. Instead, consider nabbing the
-HTML, cookies, or whatever content is required during the crawl.
+* Also, simply storing the browser is not a great idea, since
+it will be inaccessible after it is closed.
+Instead, consider nabbing the HTML, cookies,
+or whatever content is required during the crawl.
 * Finally, note that Firefox is the default browser.
 
 
@@ -213,7 +213,6 @@ spider.crawl(opts, with_watir) do |response|
   response.body.wait_until(&:present?)
   responses << response.body.html if response.body.present?
 end
-
 ```
 
 #### Options
