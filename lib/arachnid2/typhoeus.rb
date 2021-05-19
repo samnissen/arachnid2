@@ -38,7 +38,7 @@ class Arachnid2
       def after_request(request, &block)
         request.on_complete do |response|
           cacheable = use_response(response, &block)
-          return unless cacheable
+          next unless cacheable
 
           put_cached_data(response.effective_url, @options, response)
         end
