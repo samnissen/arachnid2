@@ -10,7 +10,7 @@ class Arachnid2
       @domain = Adomain[@url]
     end
 
-    def crawl(opts)
+    def crawl(opts, &block)
       preflight(opts)
       watir_preflight
       @already_retried = false
@@ -23,7 +23,7 @@ class Arachnid2
 
         @global_visited.insert(q)
 
-        make_request(q, &Proc.new)
+        make_request(q, &block)
       end # until @global_queue.empty?
     ensure
       @browser.close if @browser rescue nil
@@ -31,9 +31,9 @@ class Arachnid2
     end
 
     private
-      def make_request(q)
+      def make_request(q, &block)
         begin
-          links = browse_links(q, &Proc.new)
+          links = browse_links(q, &block)
           return unless links
 
           vacuum(links, browser.url)
@@ -53,10 +53,10 @@ class Arachnid2
         end
       end
 
-      def browse_links(url)
+      def browse_links(url, &block)
         return unless navigate(url)
 
-        yield browser
+        block.call browser
 
         process(browser.url, browser.body.html) if browser.body.exists?
       end
