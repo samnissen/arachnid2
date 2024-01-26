@@ -9,7 +9,7 @@ class Arachnid2
       @cached_data = []
     end
 
-    def crawl(opts = {})
+    def crawl(opts = {}, &block)
       preflight(opts)
       typhoeus_preflight
 
@@ -20,11 +20,11 @@ class Arachnid2
           break if time_to_stop?
           @global_visited.insert(q)
 
-          found_in_cache = use_cache(q, opts, &Proc.new)
+          found_in_cache = use_cache(q, opts, &block)
           return if found_in_cache
 
           request = ::Typhoeus::Request.new(q, request_options)
-          requestable = after_request(request, &Proc.new)
+          requestable = after_request(request, &block)
           @hydra.queue(request) if requestable
         end # max_concurrency.times do
 
@@ -35,9 +35,9 @@ class Arachnid2
     end # def crawl(opts = {})
 
     private
-      def after_request(request)
+      def after_request(request, &block)
         request.on_complete do |response|
-          cacheable = use_response(response, &Proc.new)
+          cacheable = use_response(response, &block)
           return unless cacheable
 
           put_cached_data(response.effective_url, @options, response)
@@ -46,19 +46,19 @@ class Arachnid2
         true
       end
 
-      def use_response(response)
+      def use_response(response, &block)
         links = process(response.effective_url, response.body)
         return unless links
 
-        yield response
+        block.call response
 
         vacuum(links, response.effective_url)
         true
       end
 
-      def use_cache(url, options)
+      def use_cache(url, options, &block)
         data = load_data(url, options)
-        use_response(data, &Proc.new) if data
+        use_response(data, &block) if data
 
         data
       end
