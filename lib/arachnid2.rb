@@ -105,17 +105,16 @@ class Arachnid2
   #
   # @return nil
   #
-  def crawl(opts = {}, with_watir = false)
+  def crawl(opts = {}, with_watir = false, &block)
     if with_watir
-      crawl_watir(opts, &Proc.new)
+      crawl_watir(opts, &block)
     else
-      Arachnid2::Typhoeus.new(@url).crawl(opts, &Proc.new)
+      Arachnid2::Typhoeus.new(@url).crawl(opts, &block)
     end
   end
 
-  def crawl_watir(opts)
-    Arachnid2::Watir.new(@url).crawl(opts, &Proc.new)
+  def crawl_watir(opts, &block)
+    Arachnid2::Watir.new(@url).crawl(opts, &block)
   end
-  # https://mudge.name/2011/01/26/passing-blocks-in-ruby-without-block.html
 
 end
